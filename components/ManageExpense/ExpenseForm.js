@@ -8,7 +8,7 @@ import { GlobalStyles } from "../../constants/styles";
 function ExpenseForm({defaultValue, submitButtonLabel, onCancel, onSubmit}) {
     const [inputs, setInputs] = useState({
         amount: {
-            value: defaultValue?.amount.toString() || '',
+            value: defaultValue?.amount?.toString() || '',
             isValid: true,
         },
         date: {
@@ -16,7 +16,7 @@ function ExpenseForm({defaultValue, submitButtonLabel, onCancel, onSubmit}) {
             isValid: true
         },
         description: {
-            value: defaultValue?.description.toString() || '',
+            value: defaultValue?.description?.toString() || '',
             isValid: true
         }
     });
@@ -37,7 +37,6 @@ function ExpenseForm({defaultValue, submitButtonLabel, onCancel, onSubmit}) {
             date: new Date(inputs.date.value),
             description: inputs.description.value
         };
-
         const amountIsValid = !isNaN(expenseData.amount) && expenseData.amount > 0;
         const dateIsValid = expenseData.date.toString() !== 'Invalid Date';
         const descriptionIsValid = expenseData.description.trim().length > 0;

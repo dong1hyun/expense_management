@@ -1,11 +1,16 @@
-import { useContext, useLayoutEffect } from "react";
-import { StyleSheet, TextInput, View } from "react-native";
+import { useContext, useLayoutEffect, useState } from "react";
+import { StyleSheet, View } from "react-native";
 import IconButton from "../UI/IconButton";
 import { GlobalStyles } from "../constants/styles";
 import { ExpensesContext } from "../store/expenses-context";
 import ExpenseForm from "../components/ManageExpense/ExpenseForm";
+import { deleteExpense, storeExpense, updateExpense } from "../util/http";
+import LoadingOverlay from "../UI/LoadingOverlay";
+import ErrorOverlay from "../UI/ErrorOverlay";
 
 function ManageExpenses({ route, navigation }) {
+    const [error, setError] = useState();
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const targetId = route.params?.expenseId;
     const isEditing = Boolean(targetId);
     const expensesCtx = useContext(ExpensesContext);
@@ -16,27 +21,61 @@ function ManageExpenses({ route, navigation }) {
         });
     }, [isEditing, navigation]);
 
-    function deleteExpenseHandler() {
-        expensesCtx.deleteExpense(targetId);
-        navigation.goBack();
+    async function deleteExpenseHandler() {
+        try {
+            setIsSubmitting(true);
+            await deleteExpense(targetId);
+            expensesCtx.deleteExpense(targetId);
+            navigation.goBack();
+        } catch (error) {
+            setError("지출 내역 삭제에 실패했습니다.");
+        }
+
+        setIsSubmitting(false);
     }
     function cancelHandler() {
         navigation.goBack();
     }
 
-    function confirmHandler(expenseData) {
-        isEditing ? 
-        expensesCtx.updateExpense(targetId, expenseData) :
-        expensesCtx.addExpense(expenseData)
-        navigation.goBack();
+    async function confirmHandler(expenseData) {
+        setIsSubmitting(true);
+        if (isEditing) {
+            try {
+                await updateExpense(targetId, expenseData);
+                expensesCtx.updateExpense(targetId, expenseData);
+                navigation.goBack();
+            } catch (error) {
+                setError("지출 내역 수정에 실패했습니다.");
+            }
+        } else {
+            try {
+                const id = await storeExpense(expenseData);
+                expensesCtx.addExpense({ id, ...expenseData });
+                navigation.goBack();
+            } catch (error) {
+                setError("지출 내역 추가에 실패했습니다.");
+            }
+        }
+        setIsSubmitting(false);
     }
+    function errorHandler() {
+        setError(null);
+        navigation.goBack();
+    };
+    if (error) return (
+        <ErrorOverlay
+            onConfirm={errorHandler}
+            message={error}
+        />
+    )
+    if (isSubmitting) return <LoadingOverlay />;
     return (
         <View style={styles.container}>
-            <ExpenseForm 
-            onSubmit={confirmHandler}
-            submitButtonLabel={isEditing ? 'Update' : 'Add'} 
-            onCancel={cancelHandler} 
-            defaultValue={selectedExpense}
+            <ExpenseForm
+                onSubmit={confirmHandler}
+                submitButtonLabel={isEditing ? 'Update' : 'Add'}
+                onCancel={cancelHandler}
+                defaultValue={selectedExpense}
             />
             {isEditing
                 &&

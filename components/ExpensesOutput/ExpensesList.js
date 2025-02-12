@@ -8,7 +8,6 @@ function renderExpenseItem(itemData) {
 }
 
 function ExpensesList({ expenses }) {
-
     return (
         <FlatList
             data={expenses}
